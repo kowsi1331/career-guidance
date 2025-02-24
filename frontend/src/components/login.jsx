@@ -32,8 +32,7 @@ const Auth = () => {
     setLoading(true);
     setError("");
     try {
-      const endpoint = userType === "student" ? "/student" : "/admin";
-      const response = action === "Sign Up" && userType === "student" ? await registerUser(formData, endpoint) : await loginUser(formData, endpoint);
+      const response = action === "Sign Up" && userType === "student" ? await registerUser(formData) : await loginUser(formData);
       alert(response.data.message);
       setFormData({ username: "", email: "", password: "" });
     } catch (err) {
