@@ -3,9 +3,11 @@ import "./login.css";
 import user_icon from "./Assets/user.png";
 import pass_icon from "./Assets/pasword.png";
 import message_icon from "./Assets/message.png";
+import { registerUser, loginUser } from "../api";
 
-const Login = () => {
-  const [action, setAction] = useState("Sign Up");
+const Auth = () => {
+  const [userType, setUserType] = useState("student");
+  const [action, setAction] = useState("Login");
   const [formData, setFormData] = useState({ username: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +19,7 @@ const Login = () => {
   const validateForm = () => {
     if (!formData.email.includes("@")) return "Invalid email format!";
     if (formData.password.length < 6) return "Password must be at least 6 characters!";
-    if (action === "Sign Up" && !formData.username) return "Username is required!";
+    if (userType === "student" && action === "Sign Up" && !formData.username) return "Username is required!";
     return null;
   };
 
@@ -27,91 +29,54 @@ const Login = () => {
       setError(validationError);
       return;
     }
-
     setLoading(true);
-    setError(""); // Clear previous errors
-    const endpoint = action === "Sign Up" ? "register" : "login";
-
+    setError("");
     try {
-      const response = await fetch(`http://127.0.0.1:5000/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        alert(data.message || "Success!"); // Replace with a better success UI
-        setFormData({ username: "", email: "", password: "" });
-      } else {
-        setError(data.error || "Something went wrong!");
-      }
-    } catch (error) {
-      setError("Network error. Please try again.");
+      const endpoint = userType === "student" ? "/student" : "/admin";
+      const response = action === "Sign Up" && userType === "student" ? await registerUser(formData, endpoint) : await loginUser(formData, endpoint);
+      alert(response.data.message);
+      setFormData({ username: "", email: "", password: "" });
+    } catch (err) {
+      setError(err.response?.data?.error || "Something went wrong!");
     }
     setLoading(false);
   };
 
   return (
     <div className="container">
+      <div className="tabs">
+        <button className={userType === "student" ? "active" : ""} onClick={() => setUserType("student")}>Student</button>
+        <button className={userType === "admin" ? "active" : ""} onClick={() => { setUserType("admin"); setAction("Login"); }}>Admin</button>
+      </div>
       <div className="header">
         <div className="text">{action}</div>
         <div className="underline"></div>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="inputs">
-        {action === "Login" ? null : (
+        {userType === "student" && action === "Sign Up" && (
           <div className="input">
             <img src={user_icon} alt="" height={35} />
-            <input
-              type="text"
-              name="username"
-              placeholder="Username"
-              value={formData.username}
-              onChange={handleInputChange}
-            />
+            <input type="text" name="username" placeholder="Username" value={formData.username} onChange={handleInputChange} />
           </div>
         )}
         <div className="input">
           <img src={message_icon} alt="" height={35} />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleInputChange}
-          />
+          <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleInputChange} />
         </div>
         <div className="input">
           <img src={pass_icon} alt="" height={35} />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleInputChange}
-          />
+          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleInputChange} />
         </div>
       </div>
-      {action === "Sign Up" ? null : (
-        <div className="password">
-          Forgot password? <span>Click here!</span>
-        </div>
-      )}
       <div className="submit-container">
-        <button
-          className={`submit ${loading ? "gray" : ""}`}
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? "Processing..." : action}
-        </button>
-        <button className="submit" onClick={() => setAction(action === "Sign Up" ? "Login" : "Sign Up")}>
-          {action === "Sign Up" ? "LOGIN" : "SIGN UP"}
-        </button>
+        <button className={`submit ${loading ? "gray" : ""}`} onClick={handleSubmit} disabled={loading}>{loading ? "Processing..." : action}</button>
+        {userType === "student" && (
+          <button className="submit" onClick={() => setAction(action === "Sign Up" ? "Login" : "Sign Up")}>{action === "Sign Up" ? "LOGIN" : "SIGN UP"}</button>
+        )}
       </div>
     </div>
   );
 };
 
-export default Login;
+export default Auth;
