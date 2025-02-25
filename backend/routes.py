@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from db import db
+from db import mysql,app,db
 from models import Student, Admin
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -16,11 +16,36 @@ def register():
 
 @auth.route('/login', methods=['POST'])
 def login():
-    data = request.json
-    user = Admin.query.filter_by(email=data['email']).first() or Student.query.filter_by(email=data['email']).first()
-    if user and check_password_hash(user.password, data['password']):
-        return jsonify({"message": "Login successful!"})
-    return jsonify({"error": "Invalid credentials!"}), 401
+    try:
+        data = request.get_json()
+        email = data['email']
+        password = data['password']
+
+        cursor = mysql.connection.cursor()
+
+        # 🔹 Check if the user is an admin
+        cursor.execute('SELECT id, username, email, password FROM admins WHERE email = %s', (email,))
+        admin = cursor.fetchone()
+
+        if admin and check_password_hash(admin[3], password):  
+            return jsonify({"success": True, "message": "Admin Login successful!", "user": {"id": admin[0], "username": admin[1], "email": admin[2], "role": "admin"}})
+
+        # 🔹 If not admin, check if user is a student
+        cursor.execute('SELECT id, username, email, password FROM students WHERE email = %s', (email,))
+        student = cursor.fetchone()
+
+        cursor.close()
+
+        if student and check_password_hash(student[3], password):
+            return jsonify({"success": True, "message": "Student Login successful!", "user": {"id": student[0], "username": student[1], "email": student[2], "role": "student"}})
+
+        return jsonify({"success": False, "error": "Invalid credentials!"}), 401
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+
 @app.route('/admin/<int:admin_id>', methods=['GET'])
 def get_admin_details(admin_id):
     try:

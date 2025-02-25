@@ -3,7 +3,9 @@ from config import Config
 from flask_mysqldb import MySQL
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from db import app
+from routes import auth
+app.register_blueprint(auth)
 app = Flask(__name__)
 app.config.from_object(Config)
 mysql = MySQL(app)
