@@ -5,14 +5,27 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 auth = Blueprint('auth', __name__)
 
-@auth.route('/register', methods=['POST'])
-def register():
-    data = request.json
-    hashed_password = generate_password_hash(data['password'], method='sha256')
-    new_student = Student(username=data['username'], email=data['email'], password=hashed_password)
-    db.session.add(new_student)
-    db.session.commit()
-    return jsonify({"message": "Student registered successfully!"})
+@auth.route('/signup', methods=['POST'])
+def signup():
+    try:
+        data = request.get_json()
+        username = data['username']
+        email = data['email']
+        password = data['password']
+
+        # 🔹 Hash password before storing
+        hashed_password = generate_password_hash(password)
+
+        cursor = mysql.connection.cursor()
+        cursor.execute('INSERT INTO students (username, email, password) VALUES (%s, %s, %s)',
+                       (username, email, hashed_password))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"success": True, "message": "Student created successfully!"}), 201
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 @auth.route('/login', methods=['POST'])
 def login():
@@ -43,7 +56,6 @@ def login():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 
 @app.route('/admin/<int:admin_id>', methods=['GET'])

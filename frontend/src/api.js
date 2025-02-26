@@ -15,7 +15,7 @@ export const loginUser = async (userData) => {
     try {
         const response = await axios.post(`${API_BASE_URL}/login`, userData);
         if (response.data.success) {
-            localStorage.setItem('user', JSON.stringify(response.data.user)); // ✅ Store user session
+            localStorage.setItem('user', JSON.stringify(response.data.user));
         }
         return response.data;
     } catch (error) {
